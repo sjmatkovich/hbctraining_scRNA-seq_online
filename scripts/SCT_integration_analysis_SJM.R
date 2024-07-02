@@ -31,3 +31,4 @@ for (i in 1:length(split_seurat)) {
 View(split_seurat[[1]]@meta.data)                             
 View(split_seurat[[2]]@meta.data)
 
+### Note: importing two studies ('ctrl' and 'stim') as separate layers within the same Seurat object may have been a reasonable strategy when these tutorials were written (July 2021) but appear to require splitting etc. with Seurat v5.0.0. Consider whether it's best to keep each study as a separate Seurat object as best practice in 2024, with merging later.
