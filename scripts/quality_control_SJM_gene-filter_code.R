@@ -110,7 +110,7 @@ metadata |>
 # We have similar expectations for gene detection as for UMI detection, although it may be a bit lower than UMIs. For high quality data, the proportional histogram should contain a single large peak that represents cells that were encapsulated. If we see a small shoulder to the left of the major peak (not present in our data), or a bimodal distribution of the cells, that can indicate a couple of things. It might be that there are a set of cells that failed for some reason. It could also be that there are biologically different types of cells (i.e. quiescent cell populations, less complex cells of interest), and/or one type is much smaller than the other (i.e. cells with high counts may be cells that are larger in size). Therefore, this threshold should be assessed with other metrics that we describe in this lesson.
 
 # Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
-metadata  |>
+metadata |>
   ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
   geom_density(alpha = 0.2) +
   theme_classic() +
@@ -225,3 +225,12 @@ for (layer in layer_names) {
   LayerData(object = cell_gene_filtered_seurat, layer = layer) <- filtered_counts
 }
 # -----
+
+## Exercises
+# Save (cell)-filtered subset to new metadata
+metadata_clean <- cell_gene_filtered_seurat@meta.data
+
+# Perform previous QC ggplot steps using metadata_clean in place of metadata
+
+# Create .RData object to load at any time
+save(cell_gene_filtered_seurat, file="data/seurat_cell_gene_filtered.RData")
