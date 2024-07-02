@@ -8,23 +8,24 @@ library(tidyverse)
 library(RCurl)
 library(cowplot)
 
-# Load previously cell+gene-filtered Seurat object, with joined and separate count layers in different seurat objects
-load("data/cell_gene_filtered_seurat.RData")
-load("data/cell_gene_filt_seurat_join.RData")
-
 # Load cell cycle markers
 load("data/cycle.rda")
 
 # ---- Use of CellCycleScoring on a Seurat object in which the count matrices have been pre-filtered and reassigned causes mismatch errors -----#
 
+# Load previously cell+gene-filtered Seurat object, with joined and separate count layers in different seurat objects
+load("data/cell_gene_filtered_seurat.RData")
+load("data/cell_gene_filt_seurat_join.RData")
+
 # Before we make any comparisons across cells, we will apply a simple normalization. This is solely for the purpose of exploring the sources of variation in our data.
 # Normalize the counts
 
-seurat_norm <- NormalizeData(cell_gene_filt_seurat_join)
-seurat_phase <- CellCycleScoring(seurat_norm,
-                                g2m.features = g2m_genes,
-                                s.features = s_genes
-                                )
+# seurat_norm <- NormalizeData(cell_gene_filt_seurat_join)
+# seurat_phase <- CellCycleScoring(seurat_norm,
+#                                 g2m.features = g2m_genes,
+#                                 s.features = s_genes
+#                                 )
+
 # seurat_norm <- CellCycleScoring(seurat_norm,
 #                                  g2m.features = g2m_genes[which(g2m_genes %in% rownames(seurat_norm))],
 #                                  s.features = s_genes[which(s_genes %in% rownames(seurat_norm))]
@@ -43,8 +44,7 @@ seurat_phase <- CellCycleScoring(seurat_norm,
                                 s.features = s_genes
 )
 
-
-### Note: importing two studies ('ctrl' and 'stim') as separate samples and layers within the same Seurat object may have been a reasonable strategy when these tutorials were written (July 2021) but appear to require splitting etc. with Seurat v5.0.0. Consider how best to keep each study as layers within a Seurat object as best practice in 2024, one corresponding to each experimental condition, with splitting as needed ater.
+### Note: importing two studies ('ctrl' and 'stim') as separate samples and layers within the same Seurat object may have been a reasonable strategy when these tutorials were written (July 2021) but appear to require splitting etc. with Seurat v5.0.0. Consider how best to keep each study as layers within a Seurat object as best practice in 2024, one corresponding to each experimental condition, with splitting as needed later.
 
 # ---- Splitting the Seurat object into separate objects for each sample set ----
 # Split imported cell-gene-filtered Seurat object comprising two different sample sets back out into separate objects for easier downstream processing
@@ -64,7 +64,35 @@ View(split_seurat[[2]]@meta.data)
 # In order to enable find variable selection, cell cycle phase commands below, do I now need to remerge the split objects back into a single object (seurat_phase)?
 
 seurat_phase <- merge(split_seurat$ctrl, split_seurat$stim) # throws an error 2024-07-02
+
+# Or in a workflow like this, should highly variable genes and PCA be performed for each list element (Seurat object) separately, if they can't be remerged?
 # -----
+
+# ----
+# Alternative for CellCycleScoring but then gene filtering
+# 
+# Perform CellCycleScoring as above on the cell-filtered object. Then, once these designations are present in the @meta.data slot, perform gene-filtering as in the QC script
+#
+# Gene-level filtering
+# Code below was originally for SeuratObject prior to 5.0.0, in which all counts were stored in one slot. The 5.0.0 and above version use 'layers' which need an alternate approach
+# 
+# Join layers
+cell_gene_filt_seurat_join <- JoinLayers(cell_filtered_seurat)
+# Extract counts
+counts <- GetAssayData(object = cell_gene_filt_seurat_join, slot = "counts")
+
+# Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
+nonzero <- counts > 0
+
+# Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
+keep_genes <- Matrix::rowSums(nonzero) >= 10
+
+# Only keeping those genes expressed in more than 10 cells
+filtered_counts <- counts[keep_genes, ]
+
+# Reassign to desired Seurat object
+seurat_phase[['RNA']]$counts <- filtered_counts
+ # -----
 
 ## Before performing PCA, this tutorial recommends selecting the most highly variable genes first and then scaling them so that the highest expressors don't unduly influence the dimension reduction
 
