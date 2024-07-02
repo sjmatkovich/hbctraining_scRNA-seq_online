@@ -149,82 +149,95 @@ cell_filtered_seurat <- subset(x = merged_seurat,
                             (log10GenesPerUMI > 0.80) & 
                             (mitoRatio < 0.20))
 
-## Gene-level filtering
-## Code below is for SeuratObject prior to 5.0.0, in which all counts were stored in one slot. The 5.0.0 and above version use 'layers' which need an alternate approach
-# -----
-# # Extract counts
-# counts <- GetAssayData(object = filtered_seurat, slot = "counts")
-# 
-# # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
-# nonzero <- counts > 0
-# 
-# # Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
-# keep_genes <- Matrix::rowSums(nonzero) >= 10
-# 
-# # Only keeping those genes expressed in more than 10 cells
-# filtered_counts <- counts[keep_genes, ]
-# 
-# # Reassign to filtered Seurat object
-# filtered_seurat <- CreateSeuratObject(filtered_counts, meta.data = filtered_seurat@meta.data)
-# -----
+# Create .RData object to load at any time
+save(cell_filtered_seurat, file="data/cell_filtered_seurat.RData")
 
 ## Gene-level filtering
-## SeuratObject 5.0.0 and above
+## Code below was originally for SeuratObject prior to 5.0.0, in which all counts were stored in one slot. The 5.0.0 and above version use 'layers' which need an alternate approach
 # -----
-# Make copy of SeuratObject
-cell_gene_filtered_seurat <- cell_filtered_seurat
-# Get the names of all layers
-layer_names <- Layers(cell_gene_filtered_seurat)
-
-# Loop over each layer in order to filter each layer separately
-for (layer in layer_names) {
-  # Extract the count matrix for this layer
-  counts <- LayerData(object = cell_gene_filtered_seurat, layer = layer)
-  
-  # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
-  nonzero <- counts > 0
-  
-  # Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
-  keep_genes <- Matrix::rowSums(nonzero) >= 10
-  
-  # Only keeping those genes expressed in more than 10 cells
-  filtered_counts <- counts[keep_genes, ]
-  
-  # Update the layer with the filtered count matrix
-  LayerData(object = cell_gene_filtered_seurat, layer = layer) <- filtered_counts
-}
-# -----
-
-# -----
-# An alternative would be to join the layers, derive filtering parameters, and then apply the same set of filtering parameters to all layers
-cell_filtered_seurat_joined <- JoinLayers(cell_filtered_seurat)
-allcounts <- LayerData(object = cell_filtered_seurat_joined, layer = 'counts')
-rm(cell_filtered_seurat_joined)
+# Join layers
+cell_gene_filt_seurat_join <- JoinLayers(cell_filtered_seurat)
+# Extract counts
+counts <- GetAssayData(object = cell_gene_filt_seurat_join, slot = "counts")
 
 # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
-allnonzero <- allcounts > 0
+nonzero <- counts > 0
 
 # Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
-keep_genes_all <- Matrix::rowSums(allnonzero) >= 10
-keep_genes_all_set <- names(which(keep_genes_all == T))
+keep_genes <- Matrix::rowSums(nonzero) >= 10
 
-# Make copy of SeuratObject
-cell_gene_filtered_seurat <- cell_filtered_seurat
-# Get the names of all layers
-layer_names <- Layers(cell_gene_filtered_seurat)
+# Only keeping those genes expressed in more than 10 cells
+filtered_counts <- counts[keep_genes, ]
 
-# Loop over each layer in order to filter each layer separately, with the keep_genes_all gene set from above
-for (layer in layer_names) {
-  # Extract the count matrix for this layer
-  counts <- LayerData(object = cell_gene_filtered_seurat, layer = layer)
-  
-  # Only keeping those genes expressed in more than 10 cells from prior filtering workflow
-  filtered_counts <- counts[which(rownames(counts) %in% keep_genes_all_set), ]
-  
-  # Update the layer with the filtered count matrix
-  LayerData(object = cell_gene_filtered_seurat, layer = layer) <- filtered_counts
-}
+# Reassign to filtered Seurat object
+cell_gene_filt_seurat_join[['RNA']]$counts <- filtered_counts
+cell_gene_filtered_seurat <- cell_gene_filt_seurat_join
+cell_gene_filtered_seurat[['RNA']] <- split(cell_gene_filtered_seurat[['RNA']], f=cell_gene_filtered_seurat$sample)
+
+# Create .RData objects to load at any time
+
+save(cell_gene_filt_seurat_join, file="data/cell_gene_filt_seurat_join.RData")
+save(cell_gene_filtered_seurat, file="data/cell_gene_filtered_seurat.RData")
+
 # -----
+
+# ## Gene-level filtering
+# ## SeuratObject 5.0.0 and above
+# # -----
+# # Make copy of SeuratObject
+# cell_gene_filtered_seurat <- cell_filtered_seurat
+# # Get the names of all layers
+# layer_names <- Layers(cell_gene_filtered_seurat)
+# 
+# # Loop over each layer in order to filter each layer separately
+# for (layer in layer_names) {
+#   # Extract the count matrix for this layer
+#   counts <- LayerData(object = cell_gene_filtered_seurat, layer = layer)
+#   
+#   # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
+#   nonzero <- counts > 0
+#   
+#   # Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
+#   keep_genes <- Matrix::rowSums(nonzero) >= 10
+#   
+#   # Only keeping those genes expressed in more than 10 cells
+#   filtered_counts <- counts[keep_genes, ]
+#   
+#   # Update the layer with the filtered count matrix
+#   LayerData(object = cell_gene_filtered_seurat, layer = layer) <- filtered_counts
+# }
+# # -----
+# 
+# # -----
+# # An alternative would be to join the layers, derive filtering parameters, and then apply the same set of filtering parameters to all layers
+# cell_filtered_seurat_joined <- JoinLayers(cell_filtered_seurat)
+# allcounts <- LayerData(object = cell_filtered_seurat_joined, layer = 'counts')
+# rm(cell_filtered_seurat_joined)
+# 
+# # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
+# allnonzero <- allcounts > 0
+# 
+# # Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
+# keep_genes_all <- Matrix::rowSums(allnonzero) >= 10
+# keep_genes_all_set <- names(which(keep_genes_all == T))
+# 
+# # Make copy of SeuratObject
+# cell_gene_filtered_seurat <- cell_filtered_seurat
+# # Get the names of all layers
+# layer_names <- Layers(cell_gene_filtered_seurat)
+# 
+# # Loop over each layer in order to filter each layer separately, with the keep_genes_all gene set from above
+# for (layer in layer_names) {
+#   # Extract the count matrix for this layer
+#   counts <- LayerData(object = cell_gene_filtered_seurat, layer = layer)
+#   
+#   # Only keeping those genes expressed in more than 10 cells from prior filtering workflow
+#   filtered_counts <- counts[which(rownames(counts) %in% keep_genes_all_set), ]
+#   
+#   # Update the layer with the filtered count matrix
+#   LayerData(object = cell_gene_filtered_seurat, layer = layer) <- filtered_counts
+# }
+# # -----
 
 ## Exercises
 # Save (cell)-filtered subset to new metadata
@@ -232,5 +245,4 @@ metadata_clean <- cell_gene_filtered_seurat@meta.data
 
 # Perform previous QC ggplot steps using metadata_clean in place of metadata
 
-# Create .RData object to load at any time
-save(cell_gene_filtered_seurat, file="data/seurat_cell_gene_filtered.RData")
+
