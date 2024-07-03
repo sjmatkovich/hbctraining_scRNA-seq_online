@@ -90,6 +90,14 @@ DimPlot(seurat_phase,
         reduction = "pca",
         group.by= "mitoFr",
         split.by = "mitoFr")
+
+# Perform UMAP
+seurat_phase <- RunUMAP(seurat_phase,
+                        dims = 1:40,reduction = "pca")
+DimPlot(seurat_phase,
+        reduction = "umap",
+        group.by= "sample")
+UMAPPlot(seurat_phase, group.by= "sample")
 ################################################################################
 
 # ---- Use of CellCycleScoring on a Seurat object in which the count matrices have been pre-filtered and reassigned causes mismatch errors -----#
@@ -162,5 +170,7 @@ for (i in 1:length(split_seurat)) {
 split_seurat$ctrl@assays
 split_seurat$stim@assays
 
-# Save the split seurat object (load back later with loadRDS)
+# Save the seurat_phase object (load back later with readRDS and assign to object)
+saveRDS(seurat_phase, "data/seurat_phase_mitoRatio.rds")
+# Save the split seurat object (load back later with readRDS and assign to object)
 saveRDS(split_seurat, "data/split_seurat_phase_mitoRatio.rds")
