@@ -93,7 +93,7 @@ DimPlot(seurat_phase,
 
 # Perform UMAP
 seurat_phase <- RunUMAP(seurat_phase,
-                        dims = 1:40,reduction = "pca")
+                        dims = 1:40,reduction = "pca") # alternative is reduction = "ica"
 DimPlot(seurat_phase,
         reduction = "umap",
         group.by= "sample")
