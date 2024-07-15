@@ -80,7 +80,7 @@ merged_seurat@meta.data <- metadata
 # -----
 # Visualizations
 
-# Visualize the number of cell counts per sample. From other information about htis experiment, 12-13k cells are expected per sample
+# Visualize the number of cell counts per sample. From other information about this experiment, 12-13k cells are expected per sample
 metadata |>
   ggplot(aes(x=sample, fill=sample)) + 
   geom_bar() +
@@ -126,7 +126,7 @@ metadata |>
   geom_vline(xintercept = 0.2)
 # This metric can identify whether there is a large amount of mitochondrial contamination from dead or dying cells. We define poor quality samples for mitochondrial counts as cells which surpass the 0.2 mitochondrial ratio mark, unless of course you are expecting this in your sample.
 
-# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+# Visualize the correlation between genes detected and number of UMIs and determine whether there is a strong presence of cells with low numbers of genes/UMIs
 metadata |>
   ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
   geom_point() + 
